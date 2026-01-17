@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Forex Trading Journal PWA</title>
+    <meta name="theme-color" content="#0d6efd">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        :root { --primary: #0d6efd; }
+        body { background-color: #f0f2f5; font-family: 'Segoe UI', sans-serif; }
+        .navbar { background: var(--primary); color: white; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .card { border: none; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        .card-log { margin-bottom: 12px; border-left: 5px solid #ccc; }
+        .profit-border { border-left-color: #28a745; }
+        .loss-border { border-left-color: #dc3545; }
+        .profit-text { color: #28a745; font-weight: bold; }
+        .loss-text { color: #dc3545; font-weight: bold; }
+        #app-content { display: none; }
+        #login-page { height: 100vh; display: flex; align-items: center; justify-content: center; }
+        /* Style untuk list forex agar lebih rapi */
+        datalist { background-color: white; }
+    </style>
+</head>
+<body>
+
+<div id="login-page" class="container">
+    <div class="card p-4 shadow-sm" style="max-width: 400px; width: 100%;">
+        <h3 class="text-center mb-4 fw-bold">Forex Journal 📈</h3>
+        <div class="mb-3">
+            <label class="form-label">Username</label>
+            <input type="text" id="login-username" class="form-control" placeholder="Masukkan nama Anda...">
+        </div>
+        <button onclick="login()" class="btn btn-primary w-100 py-2">Buka Catatan</button>
+    </div>
+</div>
+
+<div id="app-content">
+    <nav class="navbar p-3 mb-4">
+        <div class="container d-flex justify-content-between align-items-center">
+            <span class="navbar-brand mb-0 h1">📉 <span id="display-user"></span>'s Journal</span>
+            <button onclick="logout()" class="btn btn-sm btn-outline-light">Keluar</button>
+        </div>
+    </nav>
+
+    <div class="container mb-5">
+        <div class="card p-3 mb-3">
+            <div class="d-flex justify-content-between align-items-center">
+                <span class="fw-bold small">Mata Uang Tampilan:</span>
+                <select id="currency-select" class="form-select form-select-sm" style="width: 120px;" onchange="updateUI()">
+                    <option value="USD">USD ($)</option>
+                    <option value="IDR">IDR (Rp)</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="row g-2 mb-4 text-center">
+            <div class="col-6">
+                <div class="card p-3">
+                    <small class="text-muted d-block">Total Entry</small>
+                    <span id="total-assets" class="h5 fw-bold mb-0">0</span>
+                </div>
+            </div>
+            <div class="col-6">
+                <div class="card p-3">
+                    <small class="text-muted d-block">Net Profit</small>
+                    <span id="net-profit" class="h5 fw-bold mb-0">0</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="card p-3 mb-4 shadow-sm">
+            <h6 class="fw-bold mb-3" id="form-title">Tambah Posisi Baru</h6>
+            <input type="hidden" id="edit-id">
+            
+            <div class="mb-2">
+                <label class="form-label small fw-bold">Market / Pair</label>
+                <input list="forex-markets" id="asset" class="form-control" placeholder="Pilih atau ketik Pair (Contoh: EUR/USD)">
+                <datalist id="forex-markets">
+                    <option value="EUR/USD">EUR/USD (Euro / US Dollar)</option>
+                    <option value="GBP/USD">GBP/USD (Pound Sterling / US Dollar)</option>
+                    <option value="USD/JPY">USD/JPY (US Dollar / Japanese Yen)</option>
+                    <option value="USD/CHF">USD/CHF (US Dollar / Swiss Franc)</option>
+                    <option value="AUD/USD">AUD/USD (Australian Dollar / US Dollar)</option>
+                    <option value="USD/CAD">USD/CAD (US Dollar / Canadian Dollar)</option>
+                    <option value="NZD/USD">NZD/USD (New Zealand Dollar / US Dollar)</option>
+                    <option value="EUR/GBP">EUR/GBP</option>
+                    <option value="EUR/JPY">EUR/JPY</option>
+                    <option value="GBP/JPY">GBP/JPY</option>
+                    <option value="XAU/USD">XAU/USD (Gold)</option>
+                    <option value="XAG/USD">XAG/USD (Silver)</option>
+                    <option value="WTI/USD">WTI (Oil)</option>
+                    <option value="BTC/USD">BTC/USD (Bitcoin)</option>
+                    <option value="ETH/USD">ETH/USD (Ethereum)</option>
+                </datalist>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label small fw-bold">Nominal Profit/Loss beri tanda - untuk loss (<span class="currency-label">USD</span>)</label>
+                <div class="input-group">
+                    <span class="input-group-text currency-symbol">$</span>
+                    <input type="number" id="amount" class="form-control" placeholder="0.00">
+                </div>
+                <div id="conversion-preview" class="form-text text-end" style="display:none;"></div>
+            </div>
+
+            <div class="d-flex gap-2">
+                <button onclick="saveData()" id="btn-save" class="btn btn-primary w-100">Simpan Data</button>
+                <button onclick="resetForm()" id="btn-cancel" class="btn btn-light" style="display:none;">Batal</button>
+            </div>
+        </div>
+
+        <h6 class="fw-bold mb-3">Log Transaksi</h6>
+        <div id="data-list"></div>
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getDatabase, ref, set, push, onValue, remove, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyB6qerNsyshgEjQlpTn5QOW_tCfpah7fIo",
+        authDomain: "itikaf-63482.firebaseapp.com",
+        databaseURL: "https://itikaf-63482-default-rtdb.firebaseio.com",
+        projectId: "itikaf-63482",
+        storageBucket: "itikaf-63482.appspot.com",
+        messagingSenderId: "452451341170",
+        appId: "1:452451341170:web:885f58e689b16bf03b43eb",
+        measurementId: "G-KTPB0YZKRC"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const KURS_IDR = 15500; 
+    let currentUser = "";
+    let rawData = [];
+
+    window.login = () => {
+        const user = document.getElementById('login-username').value.trim().toLowerCase();
+        if (!user) return alert("Username tidak boleh kosong!");
+        currentUser = user;
+        document.getElementById('login-page').classList.add('d-none');
+        document.getElementById('app-content').style.display = 'block';
+        document.getElementById('display-user').innerText = user.toUpperCase();
+        loadData();
+    };
+
+    window.logout = () => location.reload();
+
+    function formatMoney(amountInUSD) {
+        const mode = document.getElementById('currency-select').value;
+        if (mode === "IDR") {
+            return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(amountInUSD * KURS_IDR);
+        }
+        return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amountInUSD);
+    }
+
+    // Listener ganti label input (Rp / $)
+    window.updateUI = () => {
+        const mode = document.getElementById('currency-select').value;
+        document.querySelectorAll('.currency-label').forEach(el => el.innerText = mode);
+        document.querySelector('.currency-symbol').innerText = mode === "IDR" ? "Rp" : "$";
+        renderList();
+    };
+
+    window.saveData = function() {
+        const id = document.getElementById('edit-id').value;
+        const asset = document.getElementById('asset').value;
+        let amount = parseFloat(document.getElementById('amount').value);
+        const mode = document.getElementById('currency-select').value;
+
+        if (!asset || isNaN(amount)) return alert("Mohon lengkapi pair dan nominal!");
+
+        // Konversi ke USD jika input dalam IDR agar database tetap standar USD
+        let amountToSave = (mode === "IDR") ? amount / KURS_IDR : amount;
+
+        const data = {
+            asset: asset.toUpperCase(),
+            amount: amountToSave,
+            date: new Date().toLocaleString('id-ID')
+        };
+
+        const path = `users/${currentUser}/trading_logs`;
+        if (id) {
+            update(ref(db, `${path}/${id}`), data).then(() => resetForm());
+        } else {
+            push(ref(db, path), data).then(() => resetForm());
+        }
+    };
+
+    function loadData() {
+        onValue(ref(db, `users/${currentUser}/trading_logs`), (snapshot) => {
+            rawData = [];
+            snapshot.forEach((child) => {
+                rawData.push({ key: child.key, ...child.val() });
+            });
+            renderList();
+        });
+    }
+
+    function renderList() {
+        const dataList = document.getElementById('data-list');
+        const netProfitEl = document.getElementById('net-profit');
+        const totalAssetsEl = document.getElementById('total-assets');
+        
+        let html = "";
+        let totalUSD = 0;
+
+        if (rawData.length === 0) {
+            dataList.innerHTML = `<div class="text-center text-muted p-5 small">Riwayat transaksi kosong.</div>`;
+            netProfitEl.innerText = formatMoney(0);
+            totalAssetsEl.innerText = "0";
+            return;
+        }
+
+        [...rawData].reverse().forEach((val) => {
+            totalUSD += val.amount;
+            const isProfit = val.amount >= 0;
+
+            html += `
+                <div class="card card-log p-3 shadow-sm ${isProfit ? 'profit-border' : 'loss-border'}">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <small class="text-muted" style="font-size: 0.7rem;">${val.date}</small>
+                            <h6 class="mb-0 fw-bold">${val.asset}</h6>
+                            <span class="${isProfit ? 'profit-text' : 'loss-text'}">${formatMoney(val.amount)}</span>
+                        </div>
+                        <div class="btn-group">
+                            <button onclick="editData('${val.key}', '${val.asset}', ${val.amount})" class="btn btn-sm btn-outline-warning">Edit</button>
+                            <button onclick="deleteData('${val.key}')" class="btn btn-sm btn-outline-danger">Hapus</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+
+        dataList.innerHTML = html;
+        totalAssetsEl.innerText = rawData.length;
+        netProfitEl.innerText = formatMoney(totalUSD);
+        netProfitEl.className = `h5 fw-bold mb-0 ${totalUSD >= 0 ? 'profit-text' : 'loss-text'}`;
+    }
+
+    window.editData = (id, asset, amountUSD) => {
+        const mode = document.getElementById('currency-select').value;
+        document.getElementById('edit-id').value = id;
+        document.getElementById('asset').value = asset;
+        
+        let displayAmount = mode === "IDR" ? (amountUSD * KURS_IDR).toFixed(0) : amountUSD.toFixed(2);
+        document.getElementById('amount').value = displayAmount;
+
+        document.getElementById('form-title').innerText = "Update Transaksi";
+        document.getElementById('btn-save').innerText = "Update";
+        document.getElementById('btn-cancel').style.display = "block";
+        window.scrollTo(0, 0);
+    };
+
+    window.deleteData = (id) => {
+        if(confirm("Hapus catatan ini?")) remove(ref(db, `users/${currentUser}/trading_logs/${id}`));
+    };
+
+    window.resetForm = () => {
+        document.getElementById('edit-id').value = "";
+        document.getElementById('asset').value = "";
+        document.getElementById('amount').value = "";
+        document.getElementById('form-title').innerText = "Tambah Posisi Baru";
+        document.getElementById('btn-save').innerText = "Simpan Data";
+        document.getElementById('btn-cancel').style.display = "none";
+    };
+</script>
+</body>
+</html>
