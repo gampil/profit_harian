@@ -19,6 +19,50 @@
         #app-content, #admin-panel { display: none; }
         #login-page { height: 100vh; display: flex; align-items: center; justify-content: center; }
         .admin-badge { background: #ffc107; color: #000; font-size: 0.7rem; padding: 2px 8px; border-radius: 10px; font-weight: bold; }
+        :root {
+    --saweria-color: #faae2b; /* Warna Kuning Khas Saweria */
+    --saweria-hover: #e69b1f;
+}
+
+.saweria-container {
+    margin-top: 20px;
+    padding-top: 15px;
+    border-top: 1px solid #eeeeee;
+    text-align: center;
+}
+
+.saweria-btn {
+    background-color: var(--saweria-color);
+    color: #000000 !important;
+    text-decoration: none !important;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 12px 20px;
+    border-radius: 10px;
+    font-weight: 700;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+    width: 100%; /* Tombol lebar penuh mengikuti card login */
+    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+}
+
+.saweria-btn:hover {
+    background-color: var(--saweria-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+}
+
+.saweria-btn:active {
+    transform: translateY(0);
+}
+
+.saweria-icon {
+    width: 22px;
+    height: 22px;
+    object-fit: contain;
+}
     </style>
 </head>
 <body>
@@ -34,7 +78,15 @@
             <input type="text" id="login-username" class="form-control" placeholder="Masukkan nama Anda..."> 
         </div>
         <button onclick="login()" class="btn btn-primary w-100 py-2">Buka Catatan</button>
+        <hr class="my-3">
+        
+        <p class="text-center text-muted small mb-1">Dukung Pengembang:</p>
+        <a href="https://saweria.co/gampilmedia" target="_blank" class="saweria-btn">
+            <img src="https://hebbkx1anhila5yf.public.blob.vercel-storage.storage.googleapis.com/saweria-icon-3T9Wj4X2Nl.png" onerror="this.src='https://cdn-icons-png.flaticon.com/512/2589/2589175.png'" alt="Saweria">
+            Traktir Kopi di Saweria
+        </a>
     </div>
+    <p class="text-muted mt-4 small">© 2026 Gampil Media Journal</p>
 </div>
 
 <div id="app-content">
